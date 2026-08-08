@@ -1,0 +1,15 @@
+[package]
+name = "a2a-bridge"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+description = "Sidecar that wraps unmodified CLI coding agents as A2A nodes (stdio/UDS binding)"
+repository = "https://github.com/cawa0505/a2a-wrapper"
+
+[dependencies]
+anyhow = "1"
+portable-pty = "0.9"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+vt100 = "0.15"
