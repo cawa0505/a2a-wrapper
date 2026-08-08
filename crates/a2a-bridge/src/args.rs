@@ -1,28 +1,56 @@
 use std::env;
 use std::process;
 
-/// Parses `--debug-grid` and agent args (everything after `--`).
-///
-/// Returns `(debug_grid, agent_args)`; an empty agent list means the
-/// default agent (`aider`).
-pub fn parse() -> (bool, Vec<String>) {
+/// Which top-level mode the bridge runs in.
+pub enum Mode {
+    /// Interactive harness: PTY + VT100 grid (Engine B), default agent aider.
+    Harness {
+        debug_grid: bool,
+        agent_args: Vec<String>,
+    },
+    /// Headless one-shot task execution (Engine A).
+    Exec { task: String },
+}
+
+pub fn parse() -> Mode {
     let mut debug_grid = false;
     let mut agent_args = Vec::new();
+    let mut task = None;
     let mut after_double_dash = false;
 
-    for arg in env::args().skip(1) {
+    let mut args = env::args().skip(1);
+    while let Some(arg) = args.next() {
         if after_double_dash {
             agent_args.push(arg);
-        } else if arg == "--" {
-            after_double_dash = true;
-        } else if arg == "--debug-grid" {
-            debug_grid = true;
         } else {
-            eprintln!("unknown argument: {arg}");
-            eprintln!("usage: a2a-bridge [--debug-grid] [-- <agent> <args...>]");
-            process::exit(2);
+            match arg.as_str() {
+                "--" => after_double_dash = true,
+                "--debug-grid" => debug_grid = true,
+                "--exec" => {
+                    task = Some(args.next().unwrap_or_else(|| {
+                        eprintln!("--exec requires a task message");
+                        usage();
+                        process::exit(2);
+                    }));
+                }
+                _ => {
+                    eprintln!("unknown argument: {arg}");
+                    usage();
+                    process::exit(2);
+                }
+            }
         }
     }
 
-    (debug_grid, agent_args)
+    match task {
+        Some(task) => Mode::Exec { task },
+        None => Mode::Harness {
+            debug_grid,
+            agent_args,
+        },
+    }
+}
+
+fn usage() {
+    eprintln!("usage: a2a-bridge [--exec <task> | --debug-grid] [-- <agent> <args...>]");
 }
