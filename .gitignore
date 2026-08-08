@@ -3,3 +3,6 @@ secrets.md
 
 # Rust build output
 /target
+
+# Local-only AGENTS.md (cross-repo boundary notes; not public)
+AGENTS.md
