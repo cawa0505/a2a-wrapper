@@ -12,7 +12,6 @@ pub const ZERO_ERROR_PATTERNS: &[&str] = &[
 /// --skip-permissions-unsafe` with explicit cwd via `-C`.
 /// `--auto high` prevents approval-gated tools from blocking headless runs.
 /// Note: `-m` on zero is `--model`, NOT message — verified 2026-08-08.
-#[allow(dead_code)] // entry point arrives with adapter selection (transport step)
 pub fn zero_exec(prompt: &str, workdir: Option<String>) -> ExecSpec {
     let mut args = vec![
         "exec".into(),

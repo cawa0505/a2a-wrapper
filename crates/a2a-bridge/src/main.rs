@@ -1,6 +1,7 @@
 mod adapter;
 mod args;
 mod pty;
+mod transport;
 
 use std::io;
 use std::process::ExitCode;
@@ -8,6 +9,7 @@ use std::process::ExitCode;
 use anyhow::Result;
 use tracing::{info, warn};
 
+use adapter::{Adapter, adapter_or_bail};
 use args::Mode;
 
 fn main() -> ExitCode {
@@ -28,6 +30,7 @@ fn main() -> ExitCode {
 fn run() -> Result<u8> {
     match args::parse() {
         Mode::Exec { task } => exec(&task),
+        Mode::Serve { adapter, cwd } => serve(&adapter, cwd),
         Mode::Harness {
             debug_grid,
             agent_args,
@@ -40,10 +43,10 @@ fn exec(task: &str) -> Result<u8> {
     info!("exec: aider -m {task:?}");
     let spec = adapter::aider_exec(task, None);
     match adapter::execute(&spec)? {
-        adapter::TaskOutcome::Completed { artifact } => {
+        adapter::TaskOutcome::Completed { artifacts } => {
             println!("completed");
-            if let Some(diff) = artifact {
-                println!("--- diff ---");
+            for diff in &artifacts {
+                println!("--- artifact ---");
                 print!("{diff}");
             }
             Ok(0)
@@ -53,6 +56,14 @@ fn exec(task: &str) -> Result<u8> {
             Ok(1)
         }
     }
+}
+
+/// A2A v1 stdio node: run the serve loop for the whitelisted `--adapter`.
+fn serve(adapter: &str, cwd: Option<String>) -> Result<u8> {
+    let selected: Adapter = adapter_or_bail(adapter)?;
+    info!("serve: adapter={} cwd={:?}", selected.label(), cwd);
+    transport::serve(selected, cwd)?;
+    Ok(0)
 }
 
 /// Engine B: interactive PTY + VT100 grid harness.

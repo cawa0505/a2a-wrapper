@@ -38,8 +38,8 @@ pub fn execute(spec: &ExecSpec) -> Result<TaskOutcome> {
 
 fn with_artifact(outcome: TaskOutcome, workdir: Option<&str>) -> TaskOutcome {
     match outcome {
-        TaskOutcome::Completed { artifact: None } => TaskOutcome::Completed {
-            artifact: git_diff(workdir).ok().flatten(),
+        TaskOutcome::Completed { artifacts } if artifacts.is_empty() => TaskOutcome::Completed {
+            artifacts: git_diff(workdir).ok().flatten().into_iter().collect(),
         },
         other => other,
     }

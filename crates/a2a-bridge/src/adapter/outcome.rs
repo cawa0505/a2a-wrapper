@@ -1,8 +1,9 @@
 /// Result of running a coding-agent task as a headless subprocess (Engine A).
 #[derive(Debug, PartialEq, Eq)]
 pub enum TaskOutcome {
-    /// Exit 0 and no error pattern matched. `artifact` carries the `git diff`.
-    Completed { artifact: Option<String> },
+    /// Exit 0 and no error pattern matched. `artifacts` carries the task
+    /// artifacts as text (e.g. `git diff`; rho also carries its status JSON).
+    Completed { artifacts: Vec<String> },
     /// Nonzero exit or an error pattern matched; reason carries the detail.
     Failed { reason: String },
 }
@@ -21,7 +22,9 @@ pub fn classify(exit_ok: bool, stdout: &str, stderr: &str, patterns: &[&str]) ->
             reason: format!("non-zero exit; stderr tail: {}", tail(stderr, 500)),
         };
     }
-    TaskOutcome::Completed { artifact: None }
+    TaskOutcome::Completed {
+        artifacts: Vec::new(),
+    }
 }
 
 fn match_pattern(stdout: &str, stderr: &str, patterns: &[&str]) -> Option<String> {
@@ -51,7 +54,9 @@ mod tests {
     fn completed_when_clean_and_zero_exit() {
         assert_eq!(
             classify(true, "ok", "", PATTERNS),
-            TaskOutcome::Completed { artifact: None }
+            TaskOutcome::Completed {
+                artifacts: Vec::new()
+            }
         );
     }
 
