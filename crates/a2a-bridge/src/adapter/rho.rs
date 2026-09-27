@@ -105,6 +105,7 @@ fn build_spec(
         ],
         workdir,
         error_patterns: RHO_ERROR_PATTERNS,
+        require_output: false,
     }
 }
 

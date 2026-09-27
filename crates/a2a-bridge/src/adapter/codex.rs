@@ -17,7 +17,8 @@ pub const CODEX_ERROR_PATTERNS: &[&str] = &[
 /// explicit cwd via `-C`.
 ///
 /// `--dangerously-bypass-approvals-and-sandbox` runs headless with no approval
-/// prompts (Argus already supplies the controlled worker environment), mirror-
+/// prompts (the invoking orchestrator already supplies the controlled worker
+/// environment), mirror-
 /// ing zero's `--auto high --skip-permissions-unsafe`. `--skip-git-repo-check`
 /// lets a task run outside a git repo.
 ///
@@ -40,6 +41,7 @@ pub fn codex_exec(prompt: &str, workdir: Option<String>) -> ExecSpec {
         args,
         workdir,
         error_patterns: CODEX_ERROR_PATTERNS,
+        require_output: false,
     }
 }
 

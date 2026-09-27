@@ -29,6 +29,7 @@ pub fn zero_exec(prompt: &str, workdir: Option<String>) -> ExecSpec {
         args,
         workdir,
         error_patterns: ZERO_ERROR_PATTERNS,
+        require_output: false,
     }
 }
 

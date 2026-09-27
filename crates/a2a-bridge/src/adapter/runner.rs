@@ -10,6 +10,11 @@ pub struct ExecSpec {
     pub args: Vec<String>,
     pub workdir: Option<String>,
     pub error_patterns: &'static [&'static str],
+    /// Demote `Completed` to `Failed` when exit 0 but stdout is empty —
+    /// opencode's upstream #36413 guard (a permission-rejected run can exit 0
+    /// with no output). Existing adapters keep `false`, so their exit-0
+    /// semantics are unchanged.
+    pub require_output: bool,
 }
 
 /// Run `spec` to completion, classify the outcome, and attach the git-diff
@@ -22,6 +27,11 @@ pub fn execute(spec: &ExecSpec) -> Result<TaskOutcome> {
     cmd.args(&spec.args);
     if let Some(dir) = &spec.workdir {
         cmd.current_dir(dir);
+        // `current_dir` alone is not enough: agents that resolve their project
+        // root from `$PWD` (opencode does) would ignore it and work in the
+        // spawning shell's directory instead. Measured 1.18.32: with an
+        // inherited `PWD`, `opencode run` wrote into the spawning repo.
+        cmd.env("PWD", dir);
     }
     let output = cmd.output()?;
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -33,6 +43,16 @@ pub fn execute(spec: &ExecSpec) -> Result<TaskOutcome> {
         &stderr,
         spec.error_patterns,
     );
+    let outcome = if spec.require_output
+        && matches!(outcome, TaskOutcome::Completed { .. })
+        && stdout.trim().is_empty()
+    {
+        TaskOutcome::Failed {
+            reason: "no output: exit 0 with empty stdout".into(),
+        }
+    } else {
+        outcome
+    };
     Ok(with_artifact(outcome, spec.workdir.as_deref()))
 }
 
@@ -121,6 +141,7 @@ mod tests {
             args: vec!["-c".into(), script.into()],
             workdir: None,
             error_patterns: &["Authentication Error"],
+            require_output: false,
         }
     }
 
@@ -128,6 +149,40 @@ mod tests {
     fn fake_agent_completed() {
         let o = execute(&fake_agent("exit 0")).unwrap();
         assert!(matches!(o, TaskOutcome::Completed { .. }));
+    }
+
+    /// Existing adapters' semantics stay put: exit 0 + empty stdout is still
+    /// Completed unless the spec opts into `require_output`.
+    #[test]
+    fn require_output_demotes_exit0_empty_stdout_to_failed() {
+        let mut spec = fake_agent("exit 0");
+        spec.require_output = true;
+        let o = execute(&spec).unwrap();
+        assert!(
+            matches!(&o, TaskOutcome::Failed { reason } if reason.contains("no output")),
+            "{o:?}"
+        );
+    }
+
+    #[test]
+    fn require_output_keeps_exit0_nonempty_stdout_completed() {
+        let mut spec = fake_agent("echo task done; exit 0");
+        spec.require_output = true;
+        let o = execute(&spec).unwrap();
+        assert!(matches!(o, TaskOutcome::Completed { .. }), "{o:?}");
+    }
+
+    /// opencode resolves its project root from `$PWD`, not the real cwd, so
+    /// `current_dir` alone silently ran it in the spawning repo. Lock the
+    /// `PWD` export: the fake agent exits non-zero when it disagrees.
+    #[test]
+    fn workdir_is_exported_as_pwd() {
+        let dir = temp_dir("pwd");
+        let mut spec = fake_agent(&format!("[ \"$PWD\" = '{}' ]", dir.display()));
+        spec.workdir = Some(dir.to_str().unwrap().into());
+        let o = execute(&spec).unwrap();
+        assert!(matches!(o, TaskOutcome::Completed { .. }), "{o:?}");
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

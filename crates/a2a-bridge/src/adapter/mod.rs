@@ -1,5 +1,6 @@
 mod aider;
 mod codex;
+mod opencode;
 mod outcome;
 mod rho;
 mod runner;
@@ -14,23 +15,31 @@ pub use runner::execute;
 /// The Engine-A adapters the bridge can dispatch. This enum IS the whitelist —
 /// the dispatch `match` is compiler-exhaustive and the lock test asserts
 /// `Adapter::ALL`'s labels, so adding/removing a variant without syncing turns
-/// a test red (mirror-locked with Argus `spec.rs` + Iris exec-adapter spec).
+/// a test red (mirror-locked with schedulers of partner deployments via the
+/// same test name; see AGENTS.md boundary notes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Adapter {
     Aider,
     Codex,
+    Opencode,
     Rho,
     Zero,
 }
 
 impl Adapter {
-    pub const ALL: &'static [Adapter] =
-        &[Adapter::Aider, Adapter::Codex, Adapter::Rho, Adapter::Zero];
+    pub const ALL: &'static [Adapter] = &[
+        Adapter::Aider,
+        Adapter::Codex,
+        Adapter::Opencode,
+        Adapter::Rho,
+        Adapter::Zero,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
             Adapter::Aider => "aider",
             Adapter::Codex => "codex",
+            Adapter::Opencode => "opencode",
             Adapter::Rho => "rho",
             Adapter::Zero => "zero",
         }
@@ -46,6 +55,7 @@ impl Adapter {
         match self {
             Adapter::Aider => execute(&aider::aider_exec(prompt, workdir)),
             Adapter::Codex => execute(&codex::codex_exec(prompt, workdir)),
+            Adapter::Opencode => execute(&opencode::opencode_exec(prompt, workdir)),
             Adapter::Zero => execute(&zero::zero_exec(prompt, workdir)),
             Adapter::Rho => rho::rho_run(prompt, workdir),
         }
@@ -68,10 +78,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn adapter_whitelist_is_exactly_aider_codex_rho_zero() {
+    fn adapter_whitelist_is_exactly_aider_codex_opencode_rho_zero() {
         let mut labels: Vec<&str> = Adapter::ALL.iter().map(|a| a.label()).collect();
         labels.sort_unstable();
-        assert_eq!(labels, ["aider", "codex", "rho", "zero"]);
+        assert_eq!(labels, ["aider", "codex", "opencode", "rho", "zero"]);
     }
 
     #[test]

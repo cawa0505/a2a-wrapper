@@ -9,8 +9,8 @@
 
 ## Description
 
-Rust sidecar turning unmodified CLI coding agents (PoC: aider) into A2A v1
-protocol nodes over a custom stdio/UDS binding.
+Rust sidecar turning unmodified CLI coding agents (aider, codex, opencode, rho,
+zero) into A2A v1 protocol nodes over a custom stdio/UDS binding.
 
 ## Capabilities
 

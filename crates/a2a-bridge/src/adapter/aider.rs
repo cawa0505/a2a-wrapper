@@ -24,6 +24,7 @@ pub fn aider_exec(task: &str, workdir: Option<String>) -> ExecSpec {
         ],
         workdir,
         error_patterns: AIDER_ERROR_PATTERNS,
+        require_output: false,
     }
 }
 
