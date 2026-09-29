@@ -9,7 +9,7 @@ depends_on: [exec-adapter]
 
 ## Problem
 
-`a2a-iris` can already execute tasks headlessly (Engine A) and supervise
+`a2a-bridge` can already execute tasks headlessly (Engine A) and supervise
 TUIs (Engine B harness), but it is not yet an **A2A node**: nothing can send it
 an A2A task over the wire. The whole product thesis is a sidecar that turns an
 unmodified CLI agent into an A2A node — this change is where that happens.
@@ -22,9 +22,9 @@ does **not** use `a2a-lf`: it hand-rolls the NDJSON wire with `serde_json` and
 its module doc states plainly *"the message shape is the boundary."* Adopting
 `a2a-lf` on the server side would buy zero interoperability with the actual
 client while pulling a heavyweight external crate (whose availability could not
-be verified offline, and whose T1 dependency wiring targeted a crate path —
-`crates/a2a-iris/` — that does not exist). Per the project's YAGNI stance we
-match the client's fixed wire shape directly.
+be verified offline, and whose T1 dependency wiring targeted a hypothetical
+`crates/a2a-xyz/` crate path that does not exist). Per the project's YAGNI
+stance we match the client's fixed wire shape directly.
 
 The wire shape is the contract (mirrored 1:1 from `agent.rs`):
 

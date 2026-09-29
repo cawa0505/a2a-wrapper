@@ -91,5 +91,5 @@ Types are hand-rolled `serde_json` matching the sole client (Argus
    (no LLM): send → Completed+artifact; send-while-busy → error; unknown
    method → -32601; malformed line → -32700.
 3. Live E2E (manual, LLM-gated): pipe NDJSON `tasks/send` into
-   `a2a-iris --serve --adapter aider` (AIDER_OPENAI_API_KEY set) in a git
+   `a2a-bridge --serve --adapter aider` (AIDER_OPENAI_API_KEY set) in a git
    repo; assert `Completed` + `diff.patch` artifact + `agent/card` shape.
