@@ -1,3 +1,4 @@
+mod acp;
 mod adapter;
 mod args;
 mod pty;
